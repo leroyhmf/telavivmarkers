@@ -21,7 +21,7 @@ class App extends Component {
         your life. The atmosphere can be spiritual and eerie at times.`},
         {lat: 32.080384, lng: 34.780709, name: 'Rabin Square', description: `Rabin Square is considered quite central in Tel Aviv,
         the Tel Aviv Municipality is connected to it, Hemda (school) is nearby and so are some iconic food joints.`},
-        {lat: 32.084271, lng: 34.780392, name: "Hemda", description: `With great money comes great education. Come here to study
+        {lat: 32.084092, lng: 34.780367, name: "Hemda", description: `With great money comes great education. Come here to study
         sciences. The place holds science conventions for everyone and teaches high schoolers arriving from schools from all
         around town three main curriculums Physics, Chemistry and Computer Sciences.`}
       ],

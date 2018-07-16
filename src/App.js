@@ -52,25 +52,28 @@ class App extends Component {
 
   render() {
     return (
-      <div>
+      <div className="main-div">
+        <h1 className="logo"> TLV <span className="logo" style={{color: 'white'}}> Markers </span> </h1>
       <SideList
         markers={this.state.shownMarkers || this.state.Markers}
         changeMarkerClicked={this.changeMarkerClicked}
         filterMarkers={this.filterMarkers}
-        />
+        markerClicked={this.state.markerClicked}
+        >
+          {this.state.markerClicked !== false && <InfoScreen
+            markers={this.state.Markers}
+            markerClicked={this.state.markerClicked}
+            />}
+      </SideList>
       <GoogleMapSection
         googleMapURL="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAQb9xq2iRT6lG8DW3cGP1K43kastziMA"
         loadingElement={<div style={{ height: `100%` }} />}
-        containerElement={<div style={{ height: `100vh`, width: `80vw`}} />}
+        containerElement={<div className="contain-map" />}
         mapElement={<div style={{ height: `100%` }} />}
         markers={this.state.shownMarkers || this.state.Markers}
         includeMarkerInBounds={this.includeMarkerInBounds}
         changeMarkerClicked={this.changeMarkerClicked}
       />
-      {this.state.markerClicked !== false && <InfoScreen
-        markers={this.state.Markers}
-        markerClicked={this.state.markerClicked}
-        />}
       </div>
     );
   }
@@ -87,8 +90,12 @@ class SideList extends Component {
     this.props.filterMarkers(filterInput);
   }
 
+  handleClick = (markerNum) => {
+    this.props.changeMarkerClicked(markerNum);
+  }
+
   render() {
-    return <div>
+    return <div className="side-list">
       <DebounceInput
         onChange={this.setFilterInput}
         value={this.state.setFilterInput}
@@ -96,17 +103,25 @@ class SideList extends Component {
       />
       <ul>
       {this.props.markers.map((marker, index) => <li
+        className={'marker-list-item' + (() => {if (index === this.props.markerClicked) return ' selected'
+        else return ''})()}
         key={'marker-onlist-'+index}
         onClick={() => this.props.changeMarkerClicked(index)}>
-          <button onClick={(e) => {e.preventDefault()}}>{marker.name}</button>
+          <button className="marker-on-list" onClick={() => this.handleClick(index)}>{marker.name}</button>
       </li>)}
-    </ul></div>
+    </ul>
+    {this.props.children}
+  </div>
   }
 }
 
 class InfoScreen extends Component {
   render() {
-    return <p>{this.props.markers[this.props.markerClicked]['description']}</p>
+    const marker = this.props.markers[this.props.markerClicked];
+    return <div className="info-screen">
+    <h2>{marker.name}</h2>
+    <p>{marker['description']}</p>
+  </div>
   }
 }
 

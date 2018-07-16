@@ -1,3 +1,70 @@
 #map {
   height: 100%;
 }
+
+.contain-map {
+  width: 82vw;
+  height: 80vh;
+  padding-left: 7vw;
+  padding-right: 6vw;
+}
+
+.main-div {
+  display: flex;
+  margin-top: 5vh;
+}
+
+.marker-on-list {
+  text-align: left;
+  font-size: 3vh;
+  border: 0;
+  background: white;
+  outline: none !important;
+}
+
+.marker-list-item.selected > .marker-on-list {
+  color: rgb(0, 32, 181);
+  font-size: 3.5vh;
+}
+
+.marker-list-item.selected::before {
+  content: ">";
+  font-size: 3.5vh;
+  color: rgb(0, 32, 181);
+}
+
+.info-screen {
+  color: black;
+  background-color: rgb(247, 246, 249);
+  margin-top: 5vh;
+  margin-left: 2vh;
+}
+
+.marker-list-item {
+  list-style-type: none;
+  margin-left: -2em;
+}
+
+.logo {
+margin-left: 8vw;
+font-size: 40px;
+margin-top: 22vh;
+background-color: #000000;
+color: #e94335;
+border-left: 11px #ea4739 solid;
+padding-left: 9px;
+height: 42px;
+}
+.side-list {
+  margin-left: 3vw;
+  width: 600px;
+}
+
+h2 {
+  font-size: 3vh;
+  margin: 0;
+}
+
+p {
+  font-size: 17px;
+}

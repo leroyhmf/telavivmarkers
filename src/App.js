@@ -1,7 +1,9 @@
 import React, { Component } from 'react';
 import { withScriptjs, withGoogleMap, GoogleMap, Marker } from "react-google-maps";
+import MarkerWithLabel from "react-google-maps/lib/components/addons/MarkerWithLabel";
 import { DebounceInput } from 'react-debounce-input';
 import './App.css';
+import { Style } from './mapstyle.js';
 
 class App extends Component {
   constructor(props) {
@@ -36,6 +38,8 @@ class App extends Component {
 
   changeMarkerClicked(markerNum) {
     if (!markerNum && markerNum !== 0) {markerNum = false}
+    //This means calling this function without a parameter
+    // or w/ "false" will set it to false
     this.setState({markerClicked: markerNum});
   }
   changeShownMarkers(markers) {
@@ -66,6 +70,7 @@ class App extends Component {
             />}
       </SideList>
       <GoogleMapSection
+        markerClicked={this.state.markerClicked}
         googleMapURL="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAQb9xq2iRT6lG8DW3cGP1K43kastziMA"
         loadingElement={<div style={{ height: `100%` }} />}
         containerElement={<div className="contain-map" />}
@@ -94,6 +99,11 @@ class SideList extends Component {
     this.props.changeMarkerClicked(markerNum);
   }
 
+  handleRevertClick = (e) => {
+    e.preventDefault();
+    this.props.changeMarkerClicked(false);
+  }
+
   render() {
     return <div className="side-list">
       <DebounceInput
@@ -101,6 +111,7 @@ class SideList extends Component {
         value={this.state.setFilterInput}
         debounceTimeout={200}
       />
+      <UndoMarkerClickButton handleRevertClick={this.handleRevertClick} markerClicked={this.props.markerClicked}/>
       <ul>
       {this.props.markers.map((marker, index) => <li
         className={'marker-list-item' + (() => {if (index === this.props.markerClicked) return ' selected'
@@ -113,6 +124,11 @@ class SideList extends Component {
     {this.props.children}
   </div>
   }
+}
+
+function UndoMarkerClickButton(props) {
+  if (props.markerClicked !== false) return <button onClick={props.handleRevertClick} aria-label="undo marker selection"></button>
+  else return null
 }
 
 class InfoScreen extends Component {
@@ -228,6 +244,8 @@ class GoogleMapContainer extends Component {
 
   includeMarkersInBounds() {
     if(this.props.markers.length < 2) {return}
+    //IDEA: use google maps gemoetry to figure out if the spot is too close to the center of town.
+    //if it is, return. (instead of returning if there's 2 markers to show)
     let bounds = new window.google.maps.LatLngBounds();
     const centerOfTown = {lat:32.080748, lng:34.781330};
       bounds.extend(centerOfTown);
@@ -260,6 +278,8 @@ class GoogleMapContainer extends Component {
   render() {
     return (
       <GoogleMap
+        defaultOptions={{styles: Style}}
+        markerClicked={this.props.marker}
         defaultZoom={this.state.zoom}
         zoom={this.state.zoom}
         defaultCenter={{ lat: 32.080359, lng: 34.780670 }}
@@ -268,15 +288,25 @@ class GoogleMapContainer extends Component {
           {
             this.props.markers.map((marker, index, markers) => {
               const position = {lat: marker.lat, lng: marker.lng}
+              let opacity = 1;
+              if (this.props.markerClicked !== false) {
+                console.log('clicked');
+                if (index !== this.props.markerClicked) {opacity = 0.5}
+              }
               if (marker === markers[markers.length-1]) {
                 this.includeMarkersInBounds();
+                //If we've rendered the final marker, set the bounds
               }
-              return <Marker
+              return <MarkerWithLabel
+                opacity={0}
                 key={'marker-onmap-'+index}
+                labelAnchor={new window.google.maps.Point(6.5, 36)}
                 onClick={() => this.props.changeMarkerClicked(index)}
                 position={position}
                 ref={this.includeMarkerInBounds}
-              />
+              >
+                <span className="maki-tree-2" style={{opacity: opacity}}></span>
+              </MarkerWithLabel>
             }
           )
        }

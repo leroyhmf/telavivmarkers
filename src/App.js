@@ -121,7 +121,100 @@ class InfoScreen extends Component {
     return <div className="info-screen">
     <h2>{marker.name}</h2>
     <p>{marker['description']}</p>
+    <FourSquareInfo marker={marker}/>
   </div>
+  }
+}
+
+class FourSquareInfo extends Component {
+  state = {
+    cafes: []
+  }
+  fetchUpdate() {
+    const marker = this.props.marker;
+    const v = '20180323'; // v is for current forsquare api version
+    const lL = `${marker.lat},${marker.lng}`; //lat lng
+    const clientId = 'BCSJS3NQSKYXTSRBXXGO52YT3GXY1MPXZ2Q03QCAQEH42XKX';
+    const clientSecret = '3JGNHARRD3000WJBSMMEYI34MMWCIWNTERIRG1FRLOR2W3OD';
+    const categoryId = '4bf58dd8d48988d16d941735';
+    // this is the categoryId for cafes, there are others at foursquare
+    return fetch(`https://api.foursquare.com/v2/venues/search?ll=${lL}
+      &categoryId=${categoryId}
+      &client_id=${clientId}
+      &client_secret=${clientSecret}
+      &radius=250
+      &v=${v}&limit=10`,
+      {method: "GET",}
+    ).then(response => response.json()).then(json =>
+      {console.log(json);
+      this.setState({
+      cafes: json.response.venues,
+      finishedFetch: true
+    })
+    })
+    .catch(error => this.setState({
+      finishedFetch: 'failed'
+    }))
+  }
+  componentDidMount() {
+    this.fetchUpdate();
+  }
+  componentDidUpdate(prevProps) {
+    if (this.props.marker !== prevProps.marker) {
+      this.setState({cafes: []}, () => this.fetchUpdate())
+    }
+  }
+
+  render() {
+    return <div>
+      { !this.state.finishedFetch && <p>Hooking up to Foursquare. Please wait!</p> ||
+    ( this.state.finishedFetch === 'failed' ) && <p>Failed to connect to Foursquare. Perhaps you're offline!</p> ||
+    this.state.finishedFetch && <ul>
+      {this.state.cafes.map(
+        cafe => <li key={'l-' + cafe.id}><FSListing cafe={cafe}/></li>
+      )}
+    </ul> }</div>
+  }
+}
+
+class FSListing extends Component {
+  state = {
+    cafe: this.props.cafe,
+    moreInfo: false
+  }
+
+  fetchUpdate() {
+      const id = this.props.cafe.id;
+      console.log(id);
+      const v = '20180323'; // v is for current forsquare api version
+      const clientId = 'BCSJS3NQSKYXTSRBXXGO52YT3GXY1MPXZ2Q03QCAQEH42XKX';
+      const clientSecret = '3JGNHARRD3000WJBSMMEYI34MMWCIWNTERIRG1FRLOR2W3OD';
+
+      return fetch(`https://api.foursquare.com/v2/venues/${id}?
+      &client_id=${clientId}
+      &client_secret=${clientSecret}
+      &v=${v}
+      `,
+      {method: "GET",}
+    ).then(response => response.json()).then(json => {console.log(json); return this.setState({moreInfo: json.response})});
+  }
+
+  componentDidMount() {
+    this.fetchUpdate();
+  }
+
+  render() {
+    const name = this.state.cafe.name;
+    if (!this.state.moreInfo) return <div><h4>{name}</h4>
+    <span>I'll be able to tell you more about {name} in a jiffy!</span></div>
+    if (this.state.moreInfo && this.state.moreInfo.rating) return <div><h4>{name}</h4>
+    <p>
+      {this.state.moreInfo.rating}
+    </p></div>
+    else if (this.state.moreInfo && !this.state.moreInfo.rating) return <div>
+          <h4>{name}</h4>
+          <p>No rating</p>
+          </div>
   }
 }
 

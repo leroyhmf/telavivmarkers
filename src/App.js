@@ -10,21 +10,24 @@ class App extends Component {
     super(props);
     this.state = {
       Markers: [
-        {lat: 32.072532, lng: 34.779597, name: 'Habima Square',
+        {lat: 32.072532, lng: 34.779597, name: 'Habima Square', type: 'square',
         description: `This might be the center of your universe, if you're a true resident of Tel Aviv!`},
-        {lat: 32.071323, lng: 34.783824, name: 'Alef High School',
+        {lat: 32.071323, lng: 34.783824, name: 'Alef High School', type: 'school',
         description: `This was my high school, I rate it 10/10!`},
-        {lat: 32.077987, lng: 34.784167, name: 'Dubnov Garden',
+        {lat: 32.077987, lng: 34.784167, name: 'Dubnov Garden', type: 'garden',
         description: `It's a cute garden. I used to come here a lot when I was little.`},
-        {lat: 32.075160, lng: 34.774908, name: 'Dizengoff Center',
+        {lat: 32.075160, lng: 34.774908, name: 'Dizengoff Center', type: 'mall',
         description: `This has to be the best mall in Tel Aviv. Seriously, no other mall can compare to it in Israel.
         Locals will tell you that the "center" feels very homie unlike other malls in Tel Aviv such as 'Azrieli' or 'Gindi TLV',
         and that makes it a very special cookie indeed.`},
-        {lat: 32.078439, lng: 34.778231, name: 'Masarik Square', description: `It's a cute spot to chill and think about where you're going with
+        {lat: 32.078439, lng: 34.778231, name: 'Masarik Square', type: 'square',
+        description: `It's a cute spot to chill and think about where you're going with
         your life. The atmosphere can be spiritual and eerie at times.`},
-        {lat: 32.080384, lng: 34.780709, name: 'Rabin Square', description: `Rabin Square is considered quite central in Tel Aviv,
+        {lat: 32.080384, lng: 34.780709, name: 'Rabin Square', type: 'square',
+        description: `Rabin Square is considered quite central in Tel Aviv,
         the Tel Aviv Municipality is connected to it, Hemda (school) is nearby and so are some iconic food joints.`},
-        {lat: 32.084092, lng: 34.780367, name: "Hemda", description: `With great money comes great education. Come here to study
+        {lat: 32.084092, lng: 34.780367, name: "Hemda", type: 'school',
+        description: `With great money comes great education. Come here to study
         sciences. The place holds science conventions for everyone and teaches high schoolers arriving from schools from all
         around town three main curriculums Physics, Chemistry and Computer Sciences.`}
       ],
@@ -269,6 +272,28 @@ class GoogleMapContainer extends Component {
       })
   }
 
+  getMarkerStyle(markerType) {
+    let style = {};
+    switch (markerType) {
+      case 'square': style.color = '#2a0041';
+      style.iconName = 'iconicfill-stop'
+      style.size = '21px'; break;
+      case 'garden': style.color = 'rgb(0, 50, 11)';
+      style.iconName = 'maki-tree-2'
+      style.size = '30px'; break;
+      case 'mall': style.color = 'rgb(200, 0, 124)';
+      style.iconName = 'maki-shop',
+      style.size = '22px'; break;
+      case 'school': style.color = 'rgb(133, 73, 0)';
+      style.iconName = 'maki-college';
+      style.size = '23px'; break;
+      default: style.color = '#ea4739';
+      style.size = '47px';
+      style.iconName = 'iconicfill-map-pin-fill';
+    }
+    return style
+  }
+
   saveMapRef = (ref) => {
       if (!ref || this._mapRef) return;
       this._mapRef = ref;
@@ -288,6 +313,9 @@ class GoogleMapContainer extends Component {
           {
             this.props.markers.map((marker, index, markers) => {
               const position = {lat: marker.lat, lng: marker.lng}
+              const markerStyle = this.getMarkerStyle(marker.type);
+              console.log(markerStyle.size);
+              console.log(markerStyle);
               let opacity = 1;
               if (this.props.markerClicked !== false) {
                 console.log('clicked');
@@ -305,7 +333,11 @@ class GoogleMapContainer extends Component {
                 position={position}
                 ref={this.includeMarkerInBounds}
               >
-                <span className="maki-tree-2" style={{opacity: opacity}}></span>
+                <span className={markerStyle.iconName} style={
+                  {opacity: opacity,
+                  color: markerStyle.color,
+                  fontSize: markerStyle.size}
+                }></span>
               </MarkerWithLabel>
             }
           )

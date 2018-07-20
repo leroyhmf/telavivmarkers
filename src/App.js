@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { withScriptjs, withGoogleMap, GoogleMap, Marker } from "react-google-maps";
+import { withScriptjs, withGoogleMap, GoogleMap } from "react-google-maps";
 import MarkerWithLabel from "react-google-maps/lib/components/addons/MarkerWithLabel";
 import { DebounceInput } from 'react-debounce-input';
 import './App.css';
@@ -63,15 +63,11 @@ class App extends Component {
         <h1 className="logo"> TLV <span className="logo" style={{color: 'white'}}> Markers </span> </h1>
       <SideList
         markers={this.state.shownMarkers || this.state.Markers}
+        originalMarkers={this.state.Markers}
         changeMarkerClicked={this.changeMarkerClicked}
         filterMarkers={this.filterMarkers}
         markerClicked={this.state.markerClicked}
-        >
-          {this.state.markerClicked !== false && <InfoScreen
-            markers={this.state.Markers}
-            markerClicked={this.state.markerClicked}
-            />}
-      </SideList>
+      />
       <GoogleMapSection
         markerClicked={this.state.markerClicked}
         googleMapURL="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAQb9xq2iRT6lG8DW3cGP1K43kastziMA"
@@ -114,7 +110,6 @@ class SideList extends Component {
         value={this.state.setFilterInput}
         debounceTimeout={200}
       />
-      <UndoMarkerClickButton handleRevertClick={this.handleRevertClick} markerClicked={this.props.markerClicked}/>
       <ul>
       {this.props.markers.map((marker, index) => <li
         className={'marker-list-item' + (() => {if (index === this.props.markerClicked) return ' selected'
@@ -124,13 +119,21 @@ class SideList extends Component {
           <button className="marker-on-list" onClick={() => this.handleClick(index)}>{marker.name}</button>
       </li>)}
     </ul>
-    {this.props.children}
+    {this.props.markerClicked !== false && <InfoScreen
+          markers={this.props.originalMarkers}
+          markerClicked={this.props.markerClicked}
+          handleRevertClick={this.handleRevertClick}
+    />}
   </div>
   }
 }
 
 function UndoMarkerClickButton(props) {
-  if (props.markerClicked !== false) return <button onClick={props.handleRevertClick} aria-label="undo marker selection"></button>
+  if (props.markerClicked !== false) return <button
+    onClick={props.handleRevertClick}
+    aria-label="undo marker selection">
+      <span className='iconicfill-x' style={{color: 'rgb(59, 49, 49)'}}></span>
+    </button>
   else return null
 }
 
@@ -138,6 +141,9 @@ class InfoScreen extends Component {
   render() {
     const marker = this.props.markers[this.props.markerClicked];
     return <div className="info-screen">
+    <UndoMarkerClickButton
+      handleRevertClick={this.props.handleRevertClick}
+    />
     <h2>{marker.name}</h2>
     <p>{marker['description']}</p>
     <FourSquareInfo marker={marker}/>
@@ -204,7 +210,6 @@ class FSListing extends Component {
 
   fetchUpdate() {
       const id = this.props.cafe.id;
-      console.log(id);
       const v = '20180323'; // v is for current forsquare api version
       const clientId = 'BCSJS3NQSKYXTSRBXXGO52YT3GXY1MPXZ2Q03QCAQEH42XKX';
       const clientSecret = '3JGNHARRD3000WJBSMMEYI34MMWCIWNTERIRG1FRLOR2W3OD';
@@ -241,8 +246,21 @@ class GoogleMapContainer extends Component {
   constructor(props) {
     super(props);
     this.state = {
-        zoom: 17
+        zoom: 17,
       }
+    this.prevMarkers = this.props.markers;
+    this.usingFirstMarkers = true;
+    //A boolean I pushed in to prevent setting bounds of map on icon clicks,
+    //so it doesn't act the same as location filtering for bounding,
+    //IDEA: instead I might want to write a function so the icon clicked
+    //gets centered
+  }
+
+  componentDidUpdate(prevProps) {
+    if (this.prevMarkers !== this.props.markers) {
+      this.prevMarkers = prevProps.markers;
+      this.usingFirstMarkers = false;
+    }
   }
 
   includeMarkersInBounds() {
@@ -314,15 +332,15 @@ class GoogleMapContainer extends Component {
             this.props.markers.map((marker, index, markers) => {
               const position = {lat: marker.lat, lng: marker.lng}
               const markerStyle = this.getMarkerStyle(marker.type);
-              console.log(markerStyle.size);
-              console.log(markerStyle);
               let opacity = 1;
               if (this.props.markerClicked !== false) {
-                console.log('clicked');
                 if (index !== this.props.markerClicked) {opacity = 0.5}
               }
               if (marker === markers[markers.length-1]) {
+                if (this.props.markers !== this.prevMarkers ||
+                this.usingFirstMarkers === true) {
                 this.includeMarkersInBounds();
+                this.usingFirstMarkers = false}
                 //If we've rendered the final marker, set the bounds
               }
               return <MarkerWithLabel

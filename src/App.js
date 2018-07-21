@@ -20,7 +20,7 @@ class App extends Component {
         description: `This has to be the best mall in Tel Aviv. Seriously, no other mall can compare to it in Israel.
         Locals will tell you that the "center" feels very homie unlike other malls in Tel Aviv such as 'Azrieli' or 'Gindi TLV',
         and that makes it a very special cookie indeed.`},
-        {lat: 32.078439, lng: 34.778231, name: 'Masarik Square', type: 'square',
+        {lat: 32.078342, lng: 34.778429, name: 'Masarik Square', type: 'square',
         description: `It's a cute spot to chill and think about where you're going with
         your life. The atmosphere can be spiritual and eerie at times.`},
         {lat: 32.080384, lng: 34.780709, name: 'Rabin Square', type: 'square',
@@ -31,19 +31,32 @@ class App extends Component {
         sciences. The place holds science conventions for everyone and teaches high schoolers arriving from schools from all
         around town three main curriculums Physics, Chemistry and Computer Sciences.`}
       ],
+      extraMarkers: [],
       markerClicked: false,
+      extraMarkerClicked: false,
       shownMarkers: false
   }
   this.changeMarkerClicked = this.changeMarkerClicked.bind(this);
   this.changeShownMarkers = this.changeShownMarkers.bind(this);
   this.filterMarkers = this.filterMarkers.bind(this);
+  this.updateExtraMarkers = this.updateExtraMarkers.bind(this);
 }
 
-  changeMarkerClicked(markerNum) {
-    if (!markerNum && markerNum !== 0) {markerNum = false}
+  updateExtraMarkers(extraMarkers) {
+    this.setState({extraMarkers: extraMarkers})
+  }
+
+  changeMarkerClicked(markerNum, isExtra) {
+    if (!markerNum && markerNum !== 0 && isExtra === true) {markerNum = false}
+    else if (!markerNum && markerNum !== 0 ) {markerNum = false}
     //This means calling this function without a parameter
     // or w/ "false" will set it to false
-    this.setState({markerClicked: markerNum});
+    if (isExtra) {
+      return this.setState({extraMarkerClicked: markerNum})
+    }
+    isExtra = this.state.extraMarkerClicked
+    this.setState({markerClicked: markerNum,
+    extraMarkerClicked: false});
   }
   changeShownMarkers(markers) {
     this.setState({shownMarkers: markers});
@@ -67,9 +80,11 @@ class App extends Component {
         changeMarkerClicked={this.changeMarkerClicked}
         filterMarkers={this.filterMarkers}
         markerClicked={this.state.markerClicked}
+        updateExtraMarkers={this.updateExtraMarkers}
       />
       <GoogleMapSection
         markerClicked={this.state.markerClicked}
+        originalMarkers={this.state.Markers}
         googleMapURL="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAQb9xq2iRT6lG8DW3cGP1K43kastziMA"
         loadingElement={<div style={{ height: `100%` }} />}
         containerElement={<div className="contain-map" />}
@@ -77,6 +92,8 @@ class App extends Component {
         markers={this.state.shownMarkers || this.state.Markers}
         includeMarkerInBounds={this.includeMarkerInBounds}
         changeMarkerClicked={this.changeMarkerClicked}
+        extraMarkers={this.state.extraMarkers}
+        extraMarkerClicked={this.state.extraMarkerClicked}
       />
       </div>
     );
@@ -100,7 +117,9 @@ class SideList extends Component {
 
   handleRevertClick = (e) => {
     e.preventDefault();
-    this.props.changeMarkerClicked(false);
+    this.props.changeMarkerClicked(false, true); // remove extra marker clicked
+    this.props.changeMarkerClicked(false); // remove marker clicked
+    this.props.updateExtraMarkers(false) // remove extra markers
   }
 
   render() {
@@ -116,13 +135,16 @@ class SideList extends Component {
         else return ''})()}
         key={'marker-onlist-'+index}
         onClick={() => this.props.changeMarkerClicked(index)}>
-          <button className="marker-on-list" onClick={() => this.handleClick(index)}>{marker.name}</button>
+          <button className="marker-on-list"
+            onClick={() => this.handleClick(index)}>{marker.name}</button>
       </li>)}
     </ul>
     {this.props.markerClicked !== false && <InfoScreen
           markers={this.props.originalMarkers}
           markerClicked={this.props.markerClicked}
           handleRevertClick={this.handleRevertClick}
+          updateExtraMarkers={this.props.updateExtraMarkers}
+          changeMarkerClicked={this.props.changeMarkerClicked}
     />}
   </div>
   }
@@ -130,6 +152,7 @@ class SideList extends Component {
 
 function UndoMarkerClickButton(props) {
   if (props.markerClicked !== false) return <button
+    className='close'
     onClick={props.handleRevertClick}
     aria-label="undo marker selection">
       <span className='iconicfill-x' style={{color: 'rgb(59, 49, 49)'}}></span>
@@ -141,12 +164,18 @@ class InfoScreen extends Component {
   render() {
     const marker = this.props.markers[this.props.markerClicked];
     return <div className="info-screen">
+      <div className="flex">
     <UndoMarkerClickButton
       handleRevertClick={this.props.handleRevertClick}
     />
     <h2>{marker.name}</h2>
+    </div>
     <p>{marker['description']}</p>
-    <FourSquareInfo marker={marker}/>
+    <FourSquareInfo
+      updateExtraMarkers={this.props.updateExtraMarkers}
+      marker={marker}
+      changeMarkerClicked={this.props.changeMarkerClicked}
+    />
   </div>
   }
 }
@@ -171,11 +200,16 @@ class FourSquareInfo extends Component {
       &v=${v}&limit=10`,
       {method: "GET",}
     ).then(response => response.json()).then(json =>
-      {console.log(json);
+      {
       this.setState({
       cafes: json.response.venues,
       finishedFetch: true
-    })
+    });
+      let extraMarkers = json.response.venues;
+      for (const extraMarker of extraMarkers) {
+        extraMarker.type = 'cafe';
+      }
+      this.props.updateExtraMarkers(extraMarkers);
     })
     .catch(error => this.setState({
       finishedFetch: 'failed'
@@ -196,64 +230,40 @@ class FourSquareInfo extends Component {
     ( this.state.finishedFetch === 'failed' ) && <p>Failed to connect to Foursquare. Perhaps you're offline!</p> ||
     this.state.finishedFetch && <ul>
       {this.state.cafes.map(
-        cafe => <li key={'l-' + cafe.id}><FSListing cafe={cafe}/></li>
-      )}
+        (cafe, index) => {
+        return <li className='fs-listing' key={'l-' + cafe.id}>
+          <FSListing cafe={cafe}
+            handleClick={() => {
+              this.props.changeMarkerClicked(index, true)}}
+          />
+        </li>
+      })}
     </ul> }</div>
   }
 }
 
 class FSListing extends Component {
   state = {
-    cafe: this.props.cafe,
     moreInfo: false
   }
 
-  fetchUpdate() {
-      const id = this.props.cafe.id;
-      const v = '20180323'; // v is for current forsquare api version
-      const clientId = 'BCSJS3NQSKYXTSRBXXGO52YT3GXY1MPXZ2Q03QCAQEH42XKX';
-      const clientSecret = '3JGNHARRD3000WJBSMMEYI34MMWCIWNTERIRG1FRLOR2W3OD';
-
-      return fetch(`https://api.foursquare.com/v2/venues/${id}?
-      &client_id=${clientId}
-      &client_secret=${clientSecret}
-      &v=${v}
-      `,
-      {method: "GET",}
-    ).then(response => response.json()).then(json => {console.log(json); return this.setState({moreInfo: json.response})});
-  }
-
-  componentDidMount() {
-    this.fetchUpdate();
-  }
-
   render() {
-    const name = this.state.cafe.name;
-    if (!this.state.moreInfo) return <div><h4>{name}</h4>
-    <span>I'll be able to tell you more about {name} in a jiffy!</span></div>
-    if (this.state.moreInfo && this.state.moreInfo.rating) return <div><h4>{name}</h4>
-    <p>
-      {this.state.moreInfo.rating}
-    </p></div>
-    else if (this.state.moreInfo && !this.state.moreInfo.rating) return <div>
-          <h4>{name}</h4>
-          <p>No rating</p>
-          </div>
+    const cafe = this.props.cafe
+    if (!this.state.moreInfo) return <div style={{marginLeft: -27}}>
+      <h4 onClick={this.props.handleClick}
+        style={{marginBottom: 0}}>
+        {cafe.name}</h4>
+    <span>{cafe.location.address}</span></div>
   }
 }
 
 class GoogleMapContainer extends Component {
   constructor(props) {
     super(props);
-    this.state = {
-        zoom: 17,
-      }
     this.prevMarkers = this.props.markers;
     this.usingFirstMarkers = true;
     //A boolean I pushed in to prevent setting bounds of map on icon clicks,
     //so it doesn't act the same as location filtering for bounding,
-    //IDEA: instead I might want to write a function so the icon clicked
-    //gets centered
   }
 
   componentDidUpdate(prevProps) {
@@ -264,11 +274,24 @@ class GoogleMapContainer extends Component {
   }
 
   includeMarkersInBounds() {
-    if(this.props.markers.length < 2) {return}
-    //IDEA: use google maps gemoetry to figure out if the spot is too close to the center of town.
-    //if it is, return. (instead of returning if there's 2 markers to show)
-    let bounds = new window.google.maps.LatLngBounds();
     const centerOfTown = {lat:32.080748, lng:34.781330};
+    //Credits for distance function: Salvador Dali on Stack Overflow
+    function distance(lat1, lon1, lat2, lon2) {
+      var p = 0.017453292519943295;    // Math.PI / 180
+      var c = Math.cos;
+      var a = 0.5 - c((lat2 - lat1) * p)/2 +
+            c(lat1 * p) * c(lat2 * p) *
+            (1 - c((lon2 - lon1) * p))/2;
+      return 12742 * Math.asin(Math.sqrt(a)); // 2 * R; R = 6371 km
+    }
+    let areCurrentMarkersTooCloseToCenter = this.props.markers.some(marker => {
+      return distance(centerOfTown.lat, centerOfTown.lng, marker.lat, marker.lng) >= 0.14
+    })
+    if(!areCurrentMarkersTooCloseToCenter) {return}
+    //For example, rabin square is too close to center, without this functionality,
+    //showing only rabin square would zoom too far in into the map because the bounds
+    //become too small
+    let bounds = new window.google.maps.LatLngBounds();
       bounds.extend(centerOfTown);
       this.props.markers.map(marker => {
         bounds.extend({lat: marker.lat, lng: marker.lng})
@@ -302,6 +325,9 @@ class GoogleMapContainer extends Component {
       case 'mall': style.color = 'rgb(200, 0, 124)';
       style.iconName = 'maki-shop',
       style.size = '22px'; break;
+      case 'cafe': style.color = 'rgb(92, 41, 34)';
+      style.iconName = 'maki-cafe',
+      style.size = '19px'; break;
       case 'school': style.color = 'rgb(133, 73, 0)';
       style.iconName = 'maki-college';
       style.size = '23px'; break;
@@ -319,13 +345,26 @@ class GoogleMapContainer extends Component {
 
 
   render() {
+    let markerClickedObj = false;
+    const defaultCenterLatLng = { lat: 32.080359, lng: 34.780670 };
+    let markerClickedLatLng = defaultCenterLatLng;
+    let zoom = 15;
+    if (this.props.markerClicked !== false) {
+      zoom = 17;
+      if (this.props.extraMarkerClicked) {
+        markerClickedObj = this.props.extraMarkers[this.props.extraMarkerClicked];
+        markerClickedLatLng = {lat: markerClickedObj.location.lat, lng: markerClickedObj.location.lng};
+      } else {
+        markerClickedObj = this.props.originalMarkers[this.props.markerClicked];
+        markerClickedLatLng = {lat: markerClickedObj.lat, lng: markerClickedObj.lng};
+      }
+    }
     return (
       <GoogleMap
         defaultOptions={{styles: Style}}
         markerClicked={this.props.marker}
-        defaultZoom={this.state.zoom}
-        zoom={this.state.zoom}
-        defaultCenter={{ lat: 32.080359, lng: 34.780670 }}
+        zoom={zoom}
+        center={markerClickedLatLng}
         ref={this.saveMapRef}
         >
           {
@@ -358,7 +397,27 @@ class GoogleMapContainer extends Component {
                 }></span>
               </MarkerWithLabel>
             }
-          )
+          )}
+          {
+          this.props.extraMarkers && this.props.extraMarkers.map((marker, index) => {
+            let opacity = 1;
+            if (this.props.extraMarkerClicked !== false) {
+              if (index !== this.props.extraMarkerClicked) {opacity = 0.5}
+            }
+            const markerStyle = this.getMarkerStyle(marker.type);
+            return <MarkerWithLabel
+              opacity={0}
+              key={'extra-marker-onmap-'+index}
+              position={{lat: marker.location.lat, lng: marker.location.lng}}
+              labelAnchor={new window.google.maps.Point(6.5, 36)}
+              onClick={() => this.props.changeMarkerClicked(index, true)}
+              >
+              <span className={markerStyle.iconName} style={
+                {color: markerStyle.color,
+                opacity: opacity,
+                fontSize: markerStyle.size}
+              }></span>
+          </MarkerWithLabel>})
        }
     </GoogleMap>
     ) }

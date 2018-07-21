@@ -41,8 +41,22 @@
 }
 
 .marker-list-item {
-  list-style-type: none;
   margin-left: -2em;
+}
+
+button.close {
+  background: none;
+  border: none;
+  order: 2
+}
+
+.flex {
+  display: flex;
+  justify-content: space-between;
+}
+
+li {
+  list-style-type: none;
 }
 
 .logo {

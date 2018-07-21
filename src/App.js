@@ -34,7 +34,8 @@ class App extends Component {
       extraMarkers: [],
       markerClicked: false,
       extraMarkerClicked: false,
-      shownMarkers: false
+      shownMarkers: false,
+      hamburgerOpen: false
   }
   this.changeMarkerClicked = this.changeMarkerClicked.bind(this);
   this.changeShownMarkers = this.changeShownMarkers.bind(this);
@@ -73,6 +74,7 @@ class App extends Component {
   render() {
     return (
       <div className="main-div">
+        <div className="logo-and-sidelist">
         <h1 className="logo"> TLV <span className="logo" style={{color: 'white'}}> Markers </span> </h1>
       <SideList
         markers={this.state.shownMarkers || this.state.Markers}
@@ -82,6 +84,7 @@ class App extends Component {
         markerClicked={this.state.markerClicked}
         updateExtraMarkers={this.updateExtraMarkers}
       />
+        </div>
       <GoogleMapSection
         markerClicked={this.state.markerClicked}
         originalMarkers={this.state.Markers}
@@ -102,13 +105,27 @@ class App extends Component {
 
 class SideList extends Component {
   state = {
-    filterInput: ''
+    filterInput: '',
+    hamburgerOpen: false,
+    windowWidth: window.innerWidth
   }
 
   setFilterInput = (event) => {
     let filterInput = event.target.value;
     this.setState({filterInput: filterInput});
     this.props.filterMarkers(filterInput);
+  }
+
+  updateHamburger = () => {
+      return this.setState(prevState => { return {hamburgerOpen: !prevState.hamburgerOpen} })
+  }
+
+  handleResize = () => this.setState({
+   windowWidth: window.innerWidth
+ });
+
+  componentDidMount() {
+    window.addEventListener('resize', this.handleResize)
   }
 
   handleClick = (markerNum) => {
@@ -123,11 +140,17 @@ class SideList extends Component {
   }
 
   render() {
-    return <div className="side-list">
-      <DebounceInput
+    return <div>
+    <button
+      onClick={this.updateHamburger}
+      className={this.state.hamburgerOpen ? 'entypo-book-open hamburger' : 'entypo-book hamburger'}>
+    </button>
+    {(this.state.hamburgerOpen || this.state.windowWidth >= 990) && <div className="side-list">
+      <div className="menu"><DebounceInput
         onChange={this.setFilterInput}
         value={this.state.setFilterInput}
         debounceTimeout={200}
+        placeholder='Type to filter'
       />
       <ul>
       {this.props.markers.map((marker, index) => <li
@@ -138,7 +161,7 @@ class SideList extends Component {
           <button className="marker-on-list"
             onClick={() => this.handleClick(index)}>{marker.name}</button>
       </li>)}
-    </ul>
+    </ul></div>
     {this.props.markerClicked !== false && <InfoScreen
           markers={this.props.originalMarkers}
           markerClicked={this.props.markerClicked}
@@ -146,7 +169,8 @@ class SideList extends Component {
           updateExtraMarkers={this.props.updateExtraMarkers}
           changeMarkerClicked={this.props.changeMarkerClicked}
     />}
-  </div>
+</div>}
+</div>
   }
 }
 
@@ -170,7 +194,7 @@ class InfoScreen extends Component {
     />
     <h2>{marker.name}</h2>
     </div>
-    <p>{marker['description']}</p>
+    <p className="info-describe">{marker['description']}</p>
     <FourSquareInfo
       updateExtraMarkers={this.props.updateExtraMarkers}
       marker={marker}
@@ -228,7 +252,9 @@ class FourSquareInfo extends Component {
     return <div>
       { !this.state.finishedFetch && <p>Hooking up to Foursquare. Please wait!</p> ||
     ( this.state.finishedFetch === 'failed' ) && <p>Failed to connect to Foursquare. Perhaps you're offline!</p> ||
-    this.state.finishedFetch && <ul>
+    this.state.finishedFetch && <div>
+          <h3>Cafes around (thanks to Foursquare)</h3>
+      <ul className="fs-listings">
       {this.state.cafes.map(
         (cafe, index) => {
         return <li className='fs-listing' key={'l-' + cafe.id}>
@@ -238,7 +264,7 @@ class FourSquareInfo extends Component {
           />
         </li>
       })}
-    </ul> }</div>
+    </ul></div> }</div>
   }
 }
 
@@ -249,7 +275,7 @@ class FSListing extends Component {
 
   render() {
     const cafe = this.props.cafe
-    if (!this.state.moreInfo) return <div style={{marginLeft: -27}}>
+    if (!this.state.moreInfo) return <div className="fs-listing">
       <h4 onClick={this.props.handleClick}
         style={{marginBottom: 0}}>
         {cafe.name}</h4>
@@ -274,7 +300,7 @@ class GoogleMapContainer extends Component {
   }
 
   includeMarkersInBounds() {
-    const centerOfTown = {lat:32.080748, lng:34.781330};
+    const centerOfTown = {lat:32.084948, lng:34.781330};
     //Credits for distance function: Salvador Dali on Stack Overflow
     function distance(lat1, lon1, lat2, lon2) {
       var p = 0.017453292519943295;    // Math.PI / 180
@@ -361,7 +387,8 @@ class GoogleMapContainer extends Component {
     }
     return (
       <GoogleMap
-        defaultOptions={{styles: Style}}
+        defaultOptions={{styles: Style, streetViewControl: false,
+        mapTypeControl: false}}
         markerClicked={this.props.marker}
         zoom={zoom}
         center={markerClickedLatLng}
@@ -373,7 +400,10 @@ class GoogleMapContainer extends Component {
               const markerStyle = this.getMarkerStyle(marker.type);
               let opacity = 1;
               if (this.props.markerClicked !== false) {
-                if (index !== this.props.markerClicked) {opacity = 0.5}
+                if (index !== this.props.markerClicked) {opacity = 0.5} else {
+                  //Can add style to selected marker here, but don't want to,
+                  //I felt it's enough to have the rest of the markers 0.5
+                }
               }
               if (marker === markers[markers.length-1]) {
                 if (this.props.markers !== this.prevMarkers ||

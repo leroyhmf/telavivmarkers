@@ -11,23 +11,23 @@ class App extends Component {
     super(props);
     this.state = {
       Markers: [
-        {lat: 32.072532, lng: 34.779597, name: 'Habima Square', type: 'square',
+        {num: 0, lat: 32.072532, lng: 34.779597, name: 'Habima Square', type: 'square',
         description: `This might be the center of your universe, if you're a true resident of Tel Aviv!`},
-        {lat: 32.071323, lng: 34.783824, name: 'Alef High School', type: 'school',
+        {num: 1, lat: 32.071323, lng: 34.783824, name: 'Alef High School', type: 'school',
         description: `This was my high school, I rate it 10/10!`},
-        {lat: 32.077987, lng: 34.784167, name: 'Dubnov Garden', type: 'garden',
+        {num: 2, lat: 32.077987, lng: 34.784167, name: 'Dubnov Garden', type: 'garden',
         description: `It's a cute garden. I used to come here a lot when I was little.`},
-        {lat: 32.075160, lng: 34.774908, name: 'Dizengoff Center', type: 'mall',
+        {num: 3, lat: 32.075160, lng: 34.774908, name: 'Dizengoff Center', type: 'mall',
         description: `This has to be the best mall in Tel Aviv. Seriously, no other mall can compare to it in Israel.
         Locals will tell you that the "center" feels very homie unlike other malls in Tel Aviv such as 'Azrieli' or 'Gindi TLV',
         and that makes it a very special cookie indeed.`},
-        {lat: 32.078342, lng: 34.778429, name: 'Masarik Square', type: 'square',
+        {num: 4, lat: 32.078342, lng: 34.778429, name: 'Masarik Square', type: 'square',
         description: `It's a cute spot to chill and think about where you're going with
         your life. The atmosphere can be spiritual and eerie at times.`},
-        {lat: 32.080384, lng: 34.780709, name: 'Rabin Square', type: 'square',
+        {num: 5, lat: 32.080384, lng: 34.780709, name: 'Rabin Square', type: 'square',
         description: `Rabin Square is considered quite central in Tel Aviv,
         the Tel Aviv Municipality is connected to it, Hemda (school) is nearby and so are some iconic food joints.`},
-        {lat: 32.084092, lng: 34.780367, name: "Hemda", type: 'school',
+        {num: 6, lat: 32.084092, lng: 34.780367, name: "Hemda", type: 'school',
         description: `With great money comes great education. Come here to study
         sciences. The place holds science conventions for everyone and teaches high schoolers arriving from schools from all
         around town three main curriculums Physics, Chemistry and Computer Sciences.`}
@@ -202,7 +202,7 @@ class SideList extends Component {
       />
       <ul>
       {this.props.markers.map((marker, index) => <li
-        className={'marker-list-item' + (() => {if (index === this.props.markerClicked) return ' selected'
+        className={'marker-list-item' + (() => {if (marker.num === this.props.markerClicked) return ' selected'
         else return ''})()}
         key={'marker-onlist-'+index}
         onClick={() => this.props.changeMarkerClicked(index)}>

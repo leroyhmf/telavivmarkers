@@ -13,6 +13,11 @@
   margin-left: -19px;
 }
 
+.fs-listing > button {
+background: none;
+border: none;
+}
+
 button.close {
   background: none;
   border: none;

@@ -199,6 +199,7 @@ class SideList extends Component {
         value={this.state.setFilterInput}
         debounceTimeout={200}
         placeholder='Type to filter'
+        aria-label="Filter markers"
       />
       <ul>
       {this.props.markers.map((marker, index) => <li
@@ -234,7 +235,9 @@ function UndoMarkerClickButton(props) {
 class InfoScreen extends Component {
   render() {
     const marker = this.props.markers[this.props.markerClicked];
-    return <div className="info-screen">
+    return <div tabIndex="0" className="info-screen"
+      aria-role="dialog"
+      >
       <div className="flex">
     <UndoMarkerClickButton
       handleRevertClick={this.props.handleRevertClick}
@@ -323,9 +326,9 @@ class FSListing extends Component {
   render() {
     const cafe = this.props.cafe
     if (!this.state.moreInfo) return <div className="fs-listing">
-      <h4 onClick={this.props.handleClick}
+      <button onClick={this.props.handleClick}><h4
         style={{marginBottom: 0}}>
-        {cafe.name}</h4>
+        {cafe.name}</h4></button>
     <span>{cafe.location.address}</span></div>
   }
 }

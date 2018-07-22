@@ -204,10 +204,9 @@ class SideList extends Component {
       {this.props.markers.map((marker, index) => <li
         className={'marker-list-item' + (() => {if (marker.num === this.props.markerClicked) return ' selected'
         else return ''})()}
-        key={'marker-onlist-'+index}
-        onClick={() => this.props.changeMarkerClicked(index)}>
+        key={'marker-onlist-'+index}>
           <button className="marker-on-list"
-            onClick={() => this.handleClick(index)}>{marker.name}</button>
+            onClick={() => this.handleClick(marker.num)}>{marker.name}</button>
       </li>)}
     </ul></div>
     {this.props.markerClicked !== false && <InfoScreen
@@ -447,10 +446,10 @@ class GoogleMapContainer extends Component {
               const position = {lat: marker.lat, lng: marker.lng}
               const markerStyle = this.getMarkerStyle(marker.type);
               let opacity = 1;
+              let className;
               if (this.props.markerClicked !== false) {
-                if (index !== this.props.markerClicked) {opacity = 0.5} else {
-                  //Can add style to selected marker here, but don't want to,
-                  //I felt it's enough to have the rest of the markers 0.5
+                if (marker.num !== this.props.markerClicked) {opacity = 0.5} else {
+                  className="animated tada infinite"
                 }
               }
               if (marker === markers[markers.length-1]) {
@@ -464,23 +463,27 @@ class GoogleMapContainer extends Component {
                 opacity={0}
                 key={'marker-onmap-'+index}
                 labelAnchor={new window.google.maps.Point(6.5, 36)}
-                onClick={() => this.props.changeMarkerClicked(index)}
+                onClick={() => this.props.changeMarkerClicked(marker.num)}
                 position={position}
                 ref={this.includeMarkerInBounds}
               >
+                <div className={className}>
                 <span className={markerStyle.iconName} style={
                   {opacity: opacity,
                   color: markerStyle.color,
                   fontSize: markerStyle.size}
-                }></span>
+                }></span></div>
               </MarkerWithLabel>
             }
           )}
           {
           this.props.extraMarkers && this.props.extraMarkers.map((marker, index) => {
             let opacity = 1;
+            let className;
             if (this.props.extraMarkerClicked !== false) {
-              if (index !== this.props.extraMarkerClicked) {opacity = 0.5}
+              if (index !== this.props.extraMarkerClicked) {opacity = 0.5} else {
+                className = "animated tada infinite";
+              }
             }
             const markerStyle = this.getMarkerStyle(marker.type);
             return <MarkerWithLabel
@@ -490,11 +493,12 @@ class GoogleMapContainer extends Component {
               labelAnchor={new window.google.maps.Point(6.5, 36)}
               onClick={() => this.props.changeMarkerClicked(index, true)}
               >
+              <div className={className}>
               <span className={markerStyle.iconName} style={
                 {color: markerStyle.color,
                 opacity: opacity,
                 fontSize: markerStyle.size}
-              }></span>
+              }></span></div>
           </MarkerWithLabel>})
        }
     </GoogleMap>

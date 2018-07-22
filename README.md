@@ -19,6 +19,8 @@ The app comes with create-react-app's built in service worker. In addition, ther
 ### Async
 
 Calls to Foursquare API are done using `fetch` which means they are asynchronous. In case of an error along the way, the user gets an error message inside the InfoScreen.
+In addition, the app has been updated to use 'load-google-maps-api' package to load the Google Maps API asynchronously. Therefore, if Google Maps couldn't be loaded, `<OnlineOnly>` will receive props that Google Maps couldn't be loaded (for example, if you are online but for some odd reason still can't reach google).
+
 
 
 ## How to run

@@ -35,7 +35,8 @@ class App extends Component {
       markerClicked: false,
       extraMarkerClicked: false,
       shownMarkers: false,
-      hamburgerOpen: false
+      hamburgerOpen: false,
+      clientOnline: window.navigator.onLine
   }
   this.changeMarkerClicked = this.changeMarkerClicked.bind(this);
   this.changeShownMarkers = this.changeShownMarkers.bind(this);
@@ -45,6 +46,19 @@ class App extends Component {
 
   updateExtraMarkers(extraMarkers) {
     this.setState({extraMarkers: extraMarkers})
+  }
+
+  componentDidMount() {
+    const here = this;
+    //window.addEventListener('offline', function(e) {
+    //this.setState({clientOnline: false}) });
+    //Uncomment to hide the map for users that get their connection cut out,
+    //I didn't want to because it could be annoying to have your map go blank
+    //in the middle of the street with no connection
+    // (there is no third option: you can't serve a cached map because google
+    // doesn't allow that)
+    window.addEventListener('online', function(e) {
+    here.setState({clientOnline: true}) });
   }
 
   changeMarkerClicked(markerNum, isExtra) {
@@ -85,12 +99,16 @@ class App extends Component {
         updateExtraMarkers={this.updateExtraMarkers}
       />
         </div>
+    <OnlineOnly
+      clientOnline={this.state.clientOnline}
+      offlineMessage="You're offline, Google Maps can't load offline!"
+      >
       <GoogleMapSection
         markerClicked={this.state.markerClicked}
         originalMarkers={this.state.Markers}
         googleMapURL="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAQb9xq2iRT6lG8DW3cGP1K43kastziMA"
         loadingElement={<div style={{ height: `100%` }} />}
-        containerElement={<div className="contain-map" />}
+        containerElement={<div className="contain-map" aria-label="locations map" />}
         mapElement={<div style={{ height: `100%` }} />}
         markers={this.state.shownMarkers || this.state.Markers}
         includeMarkerInBounds={this.includeMarkerInBounds}
@@ -98,8 +116,18 @@ class App extends Component {
         extraMarkers={this.state.extraMarkers}
         extraMarkerClicked={this.state.extraMarkerClicked}
       />
+    </OnlineOnly>
       </div>
     );
+  }
+}
+
+class OnlineOnly extends Component {
+  render() {
+    if (this.props.clientOnline) return this.props.children
+    else {
+      return <div> {this.props.offlineMessage} </div>
+    }
   }
 }
 
@@ -143,6 +171,9 @@ class SideList extends Component {
     return <div>
     <button
       onClick={this.updateHamburger}
+      aria-label={
+        this.state.hamburgerOpen ? 'open menu' : 'close menu'
+      }
       className={this.state.hamburgerOpen ? 'entypo-book-open hamburger' : 'entypo-book hamburger'}>
     </button>
     {(this.state.hamburgerOpen || this.state.windowWidth >= 990) && <div className="side-list">
@@ -178,7 +209,7 @@ function UndoMarkerClickButton(props) {
   if (props.markerClicked !== false) return <button
     className='close'
     onClick={props.handleRevertClick}
-    aria-label="undo marker selection">
+    aria-label="undo marker selection and close">
       <span className='iconicfill-x' style={{color: 'rgb(59, 49, 49)'}}></span>
     </button>
   else return null

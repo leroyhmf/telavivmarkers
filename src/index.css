@@ -1,4 +1,4 @@
-@import url(http://weloveiconfonts.com/api/?family=iconicfill|maki|entypo);
+@import url(weloveiconfonts.css);
 
 /* iconicfill */
 [class*="iconicfill-"]:before {

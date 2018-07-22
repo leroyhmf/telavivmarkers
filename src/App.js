@@ -4,6 +4,7 @@ import MarkerWithLabel from "react-google-maps/lib/components/addons/MarkerWithL
 import { DebounceInput } from 'react-debounce-input';
 import './App.css';
 import { Style } from './mapstyle.js';
+const loadGoogleMapsApi = require('load-google-maps-api');
 
 class App extends Component {
   constructor(props) {
@@ -36,7 +37,8 @@ class App extends Component {
       extraMarkerClicked: false,
       shownMarkers: false,
       hamburgerOpen: false,
-      clientOnline: window.navigator.onLine
+      clientOnline: window.navigator.onLine,
+      connectedToGoogleMaps: 'dunnoYet'
   }
   this.changeMarkerClicked = this.changeMarkerClicked.bind(this);
   this.changeShownMarkers = this.changeShownMarkers.bind(this);
@@ -50,6 +52,13 @@ class App extends Component {
 
   componentDidMount() {
     const here = this;
+    loadGoogleMapsApi({key: 'AIzaSyCAQb9xq2iRT6lG8DW3cGP1K43kastziMA'})
+    .then(function (googleMaps) {
+      window.google.maps = googleMaps;
+      here.setState({connectedToGoogleMaps: true})
+    }).catch(function (error) {
+      here.setState({connectedToGoogleMaps: false, googleMapsError: error});
+    });
     //window.addEventListener('offline', function(e) {
     //this.setState({clientOnline: false}) });
     //Uncomment to hide the map for users that get their connection cut out,
@@ -101,13 +110,14 @@ class App extends Component {
         </div>
     <OnlineOnly
       clientOnline={this.state.clientOnline}
-      offlineMessage="You're offline, Google Maps can't load offline!"
-      >
+      connectedToGoogleMaps={this.state.connectedToGoogleMaps}
+      googleMapsError={this.state.googleMapsError}
+      offlineMessage="You're offline, Google Maps can't load offline!">
       <GoogleMapSection
         markerClicked={this.state.markerClicked}
         originalMarkers={this.state.Markers}
         googleMapURL="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAQb9xq2iRT6lG8DW3cGP1K43kastziMA"
-        loadingElement={<div style={{ height: `100%` }} />}
+        loadingElement={<div style={{ height: `100%`}} />}
         containerElement={<div className="contain-map" aria-label="locations map" />}
         mapElement={<div style={{ height: `100%` }} />}
         markers={this.state.shownMarkers || this.state.Markers}
@@ -124,12 +134,19 @@ class App extends Component {
 
 class OnlineOnly extends Component {
   render() {
-    if (this.props.clientOnline) return this.props.children
-    else {
-      return <div> {this.props.offlineMessage} </div>
+    if (this.props.clientOnline && this.props.connectedToGoogleMaps === "dunnoYet") {
+      return <p>Connecting to Google Maps.</p>
+    }
+    if (this.props.clientOnline && this.props.connectedToGoogleMaps === true) {
+      return this.props.children
+    }
+    else if (this.props.clientOnline && this.props.connectedToGoogleMaps === false) {
+      return <div> <p> It's not that you're offline, but an unexpected error occured. </p>
+      {this.props.googleMapsError && <p> {this.props.googleMapsError} </p>}
+    </div> }
+    else return <div>{this.props.offlineMessage}</div>
     }
   }
-}
 
 class SideList extends Component {
   state = {
@@ -484,6 +501,6 @@ class GoogleMapContainer extends Component {
     ) }
 }
 
-const GoogleMapSection = withScriptjs( withGoogleMap( GoogleMapContainer ) )
+const GoogleMapSection = withGoogleMap( GoogleMapContainer )
 
 export default App;

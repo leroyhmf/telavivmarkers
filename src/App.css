@@ -63,7 +63,6 @@ right: 49px
 .menu button {
   background-color: none;
   border: none;
-  outline: none;
 }
 .logo {
     top: 8px;
@@ -125,7 +124,6 @@ right: 49px
   font-size: 21px;
   border: 0;
   background: none;
-  outline: none !important;
 }
 
 .marker-list-item.selected > .marker-on-list {

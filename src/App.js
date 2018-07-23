@@ -236,7 +236,7 @@ class InfoScreen extends Component {
   render() {
     const marker = this.props.markers[this.props.markerClicked];
     return <div tabIndex="0" className="info-screen"
-      aria-role="dialog"
+      role="dialog"
       >
       <div className="flex">
     <UndoMarkerClickButton
@@ -260,7 +260,7 @@ class FourSquareInfo extends Component {
   }
   fetchUpdate() {
     const marker = this.props.marker;
-    const v = '20180323'; // v is for current forsquare api version
+    const v = '20180323'; // v is for current foursquare api version
     const lL = `${marker.lat},${marker.lng}`; //lat lng
     const clientId = 'BCSJS3NQSKYXTSRBXXGO52YT3GXY1MPXZ2Q03QCAQEH42XKX';
     const clientSecret = '3JGNHARRD3000WJBSMMEYI34MMWCIWNTERIRG1FRLOR2W3OD';
@@ -273,20 +273,26 @@ class FourSquareInfo extends Component {
       &radius=250
       &v=${v}&limit=10`,
       {method: "GET",}
-    ).then(response => response.json()).then(json =>
-      {
+    ).then(response => response.json())
+    .then(json => {
+      let venues = json.response.venues;
+      venues = venues.filter(venue => venue.location.lat && venue.location.lng);
+      //Kick out, just in case, venues that were sent by Foursquare without lat lngs
+      if (Array.isArray(venues) === false) {return Promise.reject("no-venues")};
+      //If there's no array left after filtering, or if no array was delivered, abort state change
       this.setState({
-      cafes: json.response.venues,
+      cafes: venues,
       finishedFetch: true
     });
-      let extraMarkers = json.response.venues;
+      let extraMarkers = venues;
       for (const extraMarker of extraMarkers) {
         extraMarker.type = 'cafe';
       }
       this.props.updateExtraMarkers(extraMarkers);
     })
     .catch(error => this.setState({
-      finishedFetch: 'failed'
+      finishedFetch: 'failed',
+      failedFetchError: error
     }))
   }
   componentDidMount() {
@@ -301,6 +307,7 @@ class FourSquareInfo extends Component {
   render() {
     return <div>
       { !this.state.finishedFetch && <p>Hooking up to Foursquare. Please wait!</p> ||
+    (this.state.failedFetchError === 'no-venues') && <p>Weird response error. Didn't get venues from Foursquare. Perhaps our API key broke.</p> ||
     ( this.state.finishedFetch === 'failed' ) && <p>Failed to connect to Foursquare. Perhaps you're offline!</p> ||
     this.state.finishedFetch && <div>
           <h3>Cafes around (thanks to Foursquare)</h3>
@@ -328,8 +335,8 @@ class FSListing extends Component {
     if (!this.state.moreInfo) return <div className="fs-listing">
       <button onClick={this.props.handleClick}><h4
         style={{marginBottom: 0}}>
-        {cafe.name}</h4></button>
-    <span>{cafe.location.address}</span></div>
+        {cafe.name || 'No name for cafe'}</h4></button>
+    <span>{cafe.location.address || `No address, lat: ${cafe.location.lat} lng ${cafe.location.lng}` || 'No address'}</span></div>
   }
 }
 

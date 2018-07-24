@@ -29,7 +29,7 @@ Also note that if the client has gone offline before Google Maps managed to load
 ### Async
 
 Calls to Foursquare API are done using `fetch` which means they are asynchronous. In case of an error along the way, the user gets an error message inside the InfoScreen.
-In addition, the app has been updated to use 'load-google-maps-api' package to load the Google Maps API asynchronously. Therefore, if Google Maps couldn't be loaded, `<OnlineOnly>` will receive props that Google Maps couldn't be loaded (e.g API down or API Key broke).
+In addition, the app has been updated to use 'load-google-maps-api' package to load the Google Maps API asynchronously. Therefore, if Google Maps couldn't be loaded, `<OnlineOnly>` will receive props that Google Maps couldn't be loaded (e.g API down).
 
 ## How to run
 

@@ -1,3 +1,10 @@
+.alert {
+  background:white;
+  position: fixed;
+  top: 122px;
+  right: 12vw;
+}
+
 .logo {
     /* margin-left: 8vw; */
     font-size: 40px;
@@ -35,12 +42,7 @@ li {
 
 
 @media screen and (max-width: 990px) {
-.hamburger {
-  position: absolute;
-  bottom: 85px;
-  right: 9px;
-  z-index: 2000;
-}
+
 .fs-listing {
   margin-left: -20px;
 }
@@ -103,6 +105,17 @@ right: 49px
 .hamburger {
   display: none;
 }
+}
+@media screen and (max-width: 990px) {
+.hamburger {
+  position: absolute;
+  bottom: 85px;
+  right: 9px;
+  z-index: 2000;
+}
+}
+
+@media screen and (min-width: 990px) {
 .logo {
    margin-left: 6vw;
    margin-top: 22vh;

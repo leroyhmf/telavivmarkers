@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { withScriptjs, withGoogleMap, GoogleMap } from "react-google-maps";
+import { withGoogleMap, GoogleMap } from "react-google-maps";
 import MarkerWithLabel from "react-google-maps/lib/components/addons/MarkerWithLabel";
 import { DebounceInput } from 'react-debounce-input';
 import './App.css';
@@ -38,13 +38,20 @@ class App extends Component {
       shownMarkers: false,
       hamburgerOpen: false,
       clientOnline: window.navigator.onLine,
-      connectedToGoogleMaps: 'dunnoYet'
+      connectedToGoogleMaps: 'dunnoYet',
+      disconnectedGoogleMaps: false,
+      isMapRendered: false
   }
   this.changeMarkerClicked = this.changeMarkerClicked.bind(this);
   this.changeShownMarkers = this.changeShownMarkers.bind(this);
   this.filterMarkers = this.filterMarkers.bind(this);
   this.updateExtraMarkers = this.updateExtraMarkers.bind(this);
+  this.setIsMapRendered = this.setIsMapRendered.bind(this);
 }
+
+  setIsMapRendered() {
+    this.setState({isMapRendered: true});
+  }
 
   updateExtraMarkers(extraMarkers) {
     this.setState({extraMarkers: extraMarkers})
@@ -52,22 +59,36 @@ class App extends Component {
 
   componentDidMount() {
     const here = this;
-    loadGoogleMapsApi({key: 'AIzaSyCAQb9xq2iRT6lG8DW3cGP1K43kastziMA'})
-    .then(function (googleMaps) {
-      window.google.maps = googleMaps;
-      here.setState({connectedToGoogleMaps: true})
-    }).catch(function (error) {
-      here.setState({connectedToGoogleMaps: false, googleMapsError: error});
-    });
-    //window.addEventListener('offline', function(e) {
-    //this.setState({clientOnline: false}) });
-    //Uncomment to hide the map for users that get their connection cut out,
-    //I didn't want to because it could be annoying to have your map go blank
-    //in the middle of the street with no connection
-    // (there is no third option: you can't serve a cached map because google
-    // doesn't allow that)
+    const loadRoutine = () => {
+      loadGoogleMapsApi({key: 'AIzaSyCAQb9xq2iRT6lG8DW3cGP1K43kastziMA'})
+      .then(function (googleMaps) {
+        window.google.maps = googleMaps;
+        here.setState({connectedToGoogleMaps: true})
+        return Promise.resolve();
+      }).catch(function (error) {
+        here.setState({connectedToGoogleMaps: false, googleMapsError: error});
+      });
+    }
+    window.addEventListener('offline', function(e) {
+      if (here.state.connectedToGoogleMaps !== true) {
+        //If we haven't reached google maps yet and the browser detects we're offline,
+        //update client online to false
+        here.setState({clientOnline: false}) }
+      else {
+        //Otherwise, update the state so we know that the user disconnected after initializing
+        //google map
+        here.setState({disconnectedGoogleMaps: true});
+      }});
     window.addEventListener('online', function(e) {
-    here.setState({clientOnline: true}) });
+      if (here.state.connectedToGoogleMaps === 'false') {
+        //If we failed to connect to Google Maps and reconnected to the internet,
+        //try loading google maps again
+        loadRoutine()
+        .then(
+        here.setState({clientOnline: true}));
+      }
+  });
+    loadRoutine();
   }
 
   changeMarkerClicked(markerNum, isExtra) {
@@ -112,8 +133,12 @@ class App extends Component {
       clientOnline={this.state.clientOnline}
       connectedToGoogleMaps={this.state.connectedToGoogleMaps}
       googleMapsError={this.state.googleMapsError}
-      offlineMessage="You're offline, Google Maps can't load offline!">
+      disconnectedGoogleMaps={this.state.disconnectedGoogleMaps}
+      isMapRendered={this.state.isMapRendered}
+      >
       <GoogleMapSection
+        setIsMapRendered={this.setIsMapRendered}
+        isMapRendered={this.state.isMapRendered}
         markerClicked={this.state.markerClicked}
         originalMarkers={this.state.Markers}
         googleMapURL="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAQb9xq2iRT6lG8DW3cGP1K43kastziMA"
@@ -133,18 +158,53 @@ class App extends Component {
 }
 
 class OnlineOnly extends Component {
+  state = {
+    showAlert: true
+  }
+
+  hideAlert = () => {this.setState({showAlert: false})}
+
   render() {
     if (this.props.clientOnline && this.props.connectedToGoogleMaps === "dunnoYet") {
       return <p>Connecting to Google Maps.</p>
     }
     if (this.props.clientOnline && this.props.connectedToGoogleMaps === true) {
-      return this.props.children
+      if (this.props.disconnectedGoogleMaps && this.props.isMapRendered === true)
+      {
+        return <React.Fragment>
+          {this.props.children}
+          {this.state.showAlert && <div className="alert"
+            role="alertdialog"
+            aria-labelledby="dialogTitle"
+            aria-describedby="dialogDesc"
+            tabIndex="0"
+            >
+              <div className="flex">
+              <h2 id="dialogTitle">You've disconnected.</h2>
+              <CloseButton
+                className='close'
+                handleClick={this.hideAlert}
+              /></div>
+              <p id="dialogDesc">In order to continue using the map you might need to refresh.</p>
+            </div>
+          }
+          </React.Fragment>
+      }
+      else if (this.props.disconnectedGoogleMaps && this.props.isMapRendered === false)
+      {
+        return <p className="alert">Error: We were able to initialize first contact with Google Maps.
+            However, somewhere along the way after that your connection
+            fell before we could finally ask Google Maps to show us a map on screen.</p>
+      }
+      else {
+        return this.props.children
+      }
     }
     else if (this.props.clientOnline && this.props.connectedToGoogleMaps === false) {
-      return <div> <p> It's not that you're offline, but an unexpected error occured. </p>
+      return <div> <p className="alert"> It's not that you're offline, but an unexpected error occured so we couldn't connect to Google Maps. </p>
       {this.props.googleMapsError && <p> {this.props.googleMapsError} </p>}
     </div> }
-    else return <div>{this.props.offlineMessage}</div>
+    else return <p className="alert">You're offline, Google Maps can't load offline!</p>
     }
   }
 
@@ -152,7 +212,7 @@ class SideList extends Component {
   state = {
     filterInput: '',
     hamburgerOpen: false,
-    windowWidth: window.innerWidth
+    matchMedia: false
   }
 
   setFilterInput = (event) => {
@@ -165,9 +225,15 @@ class SideList extends Component {
       return this.setState(prevState => { return {hamburgerOpen: !prevState.hamburgerOpen} })
   }
 
-  handleResize = () => this.setState({
-   windowWidth: window.innerWidth
- });
+  handleResize = () => {
+    let matchMedia = false;
+    if (window.matchMedia('(min-width: 990px)').matches) {
+      matchMedia = true;
+      console.log('true');
+    }
+    else {console.log('false')}
+    this.setState({ matchMedia: matchMedia})
+  };
 
   componentDidMount() {
     window.addEventListener('resize', this.handleResize)
@@ -193,7 +259,7 @@ class SideList extends Component {
       }
       className={this.state.hamburgerOpen ? 'entypo-book-open hamburger' : 'entypo-book hamburger'}>
     </button>
-    {(this.state.hamburgerOpen || this.state.windowWidth >= 990) && <div className="side-list">
+    {(this.state.hamburgerOpen || this.state.matchMedia) && <div className="side-list">
       <div className="menu"><DebounceInput
         onChange={this.setFilterInput}
         value={this.state.setFilterInput}
@@ -222,14 +288,12 @@ class SideList extends Component {
   }
 }
 
-function UndoMarkerClickButton(props) {
-  if (props.markerClicked !== false) return <button
+function CloseButton(props) {return <button
     className='close'
-    onClick={props.handleRevertClick}
-    aria-label="undo marker selection and close">
+    onClick={props.handleClick}
+    aria-label={props.label || "close"}>
       <span className='iconicfill-x' style={{color: 'rgb(59, 49, 49)'}}></span>
     </button>
-  else return null
 }
 
 class InfoScreen extends Component {
@@ -239,8 +303,9 @@ class InfoScreen extends Component {
       role="dialog"
       >
       <div className="flex">
-    <UndoMarkerClickButton
-      handleRevertClick={this.props.handleRevertClick}
+    <CloseButton
+      handleClick={this.props.handleRevertClick}
+      label='undo marker selection and close'
     />
     <h2>{marker.name}</h2>
     </div>
@@ -424,6 +489,24 @@ class GoogleMapContainer extends Component {
   saveMapRef = (ref) => {
       if (!ref || this._mapRef) return;
       this._mapRef = ref;
+      const actualMapObj = ref.context.__SECRET_MAP_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+      //react-google-maps turned out to be a very problematic library with little documentation.
+      //With that said, I felt I had to use the actual map object to know when the map went through
+      //the idle stage (when it actually got fully rendered. You can't know this with just react or plain javascript
+      //because the listening to the idle stage is something that the google maps API supplies, and just knowing
+      //when the compononent mounted, for example won't tell us if we can actually see the map with everything on it)
+      //This shouldn't have drastic side effects because we're only listening for a change
+      //in the map and not changing anything. I hope I don't get fired :)
+      const setIsMapRendered = this.props.setIsMapRendered;
+      window.google.maps.event.addListenerOnce(actualMapObj, 'idle', function(){
+        //Uncomment to test what happens when the app doesn't get that the map
+        //went through the idle event (meaning we can see a map on screen)
+        //debugger;
+        //<Turn browser offline at this point>
+        //setTimeout(function() {
+        //debugger;
+        setIsMapRendered(); // }, 200)
+      });
     }
 
 

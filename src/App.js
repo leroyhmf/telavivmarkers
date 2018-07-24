@@ -83,9 +83,8 @@ class App extends Component {
       if (here.state.connectedToGoogleMaps === 'false') {
         //If we failed to connect to Google Maps and reconnected to the internet,
         //try loading google maps again
-        loadRoutine()
-        .then(
-        here.setState({clientOnline: true}));
+        here.setState({clientOnline: true});
+        loadRoutine();
       }
   });
     loadRoutine();
@@ -165,11 +164,14 @@ class OnlineOnly extends Component {
   hideAlert = () => {this.setState({showAlert: false})}
 
   render() {
+    //For each message number, to code block on top of the comment is its relevant message
     if (this.props.clientOnline && this.props.connectedToGoogleMaps === "dunnoYet") {
+      //Message (2)
       return <p>Connecting to Google Maps.</p>
     }
     if (this.props.clientOnline && this.props.connectedToGoogleMaps === true) {
       if (this.props.disconnectedGoogleMaps && this.props.isMapRendered === true)
+      //Message (5F)
       {
         return <React.Fragment>
           {this.props.children}
@@ -189,12 +191,14 @@ class OnlineOnly extends Component {
             </div>
           }
           </React.Fragment>
+          //Message 5
       }
       else if (this.props.disconnectedGoogleMaps && this.props.isMapRendered === false)
       {
         return <p className="alert">Error: We were able to initialize first contact with Google Maps.
             However, somewhere along the way after that your connection
             fell before we could finally ask Google Maps to show us a map on screen.</p>
+      //Message (4)
       }
       else {
         return this.props.children
@@ -204,7 +208,9 @@ class OnlineOnly extends Component {
       return <div> <p className="alert"> It's not that you're offline, but an unexpected error occured so we couldn't connect to Google Maps. </p>
       {this.props.googleMapsError && <p> {this.props.googleMapsError} </p>}
     </div> }
+    //Message (3)
     else return <p className="alert">You're offline, Google Maps can't load offline!</p>
+    //Message (1)
     }
   }
 
@@ -229,9 +235,7 @@ class SideList extends Component {
     let matchMedia = false;
     if (window.matchMedia('(min-width: 990px)').matches) {
       matchMedia = true;
-      console.log('true');
     }
-    else {console.log('false')}
     this.setState({ matchMedia: matchMedia})
   };
 

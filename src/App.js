@@ -4,7 +4,7 @@ import MarkerWithLabel from "react-google-maps/lib/components/addons/MarkerWithL
 import { DebounceInput } from 'react-debounce-input';
 import './App.css';
 import { Style } from './mapstyle.js';
-const loadGoogleMapsApi = require('load-google-maps-api');
+import loadGoogleMapsApi from './loadgmaps.js';
 
 class App extends Component {
   constructor(props) {
@@ -39,6 +39,7 @@ class App extends Component {
       hamburgerOpen: false,
       clientOnline: window.navigator.onLine,
       connectedToGoogleMaps: 'dunnoYet',
+      reInitializedGoogleMaps: false,
       disconnectedGoogleMaps: false,
       isMapRendered: false
   }
@@ -59,16 +60,20 @@ class App extends Component {
 
   componentDidMount() {
     const here = this;
-    const loadRoutine = () => {
-      loadGoogleMapsApi({key: 'AIzaSyCAQb9xq2iRT6lG8DW3cGP1K43kastziMA'})
-      .then(function (googleMaps) {
-        window.google.maps = googleMaps;
+    const loadRoutine = (retry) => {
+      loadGoogleMapsApi({key: 'AIzaSyCAQb9xq2iRT6lG8DW3cGP1K43kastziMA'}, retry)
+      .then(function (response) {
+        window.google.maps = response.googlemaps;
         here.setState({connectedToGoogleMaps: true})
+        if (response.retry) {
+          here.setState({reInitializedGoogleMaps: true})
+        }
         return Promise.resolve();
       }).catch(function (error) {
         here.setState({connectedToGoogleMaps: false, googleMapsError: error});
       });
     }
+    window.loadRoutine = loadRoutine;
     window.addEventListener('offline', function(e) {
       if (here.state.connectedToGoogleMaps !== true) {
         //If we haven't reached google maps yet and the browser detects we're offline,
@@ -80,11 +85,10 @@ class App extends Component {
         here.setState({disconnectedGoogleMaps: true});
       }});
     window.addEventListener('online', function(e) {
-      if (here.state.connectedToGoogleMaps === 'false') {
-        //If we failed to connect to Google Maps and reconnected to the internet,
-        //try loading google maps again
-        here.setState({clientOnline: true});
-        loadRoutine();
+      here.setState({clientOnline: true});
+      if (here.state.connectedToGoogleMaps === "dunnoYet") {
+        window.google = undefined;
+        loadRoutine(true)
       }
   });
     loadRoutine();
@@ -134,6 +138,7 @@ class App extends Component {
       googleMapsError={this.state.googleMapsError}
       disconnectedGoogleMaps={this.state.disconnectedGoogleMaps}
       isMapRendered={this.state.isMapRendered}
+      reInitializedGoogleMaps={this.state.reInitializedGoogleMaps}
       >
       <GoogleMapSection
         setIsMapRendered={this.setIsMapRendered}
@@ -169,7 +174,7 @@ class OnlineOnly extends Component {
       //Message (2)
       return <p>Connecting to Google Maps.</p>
     }
-    if (this.props.clientOnline && this.props.connectedToGoogleMaps === true) {
+    if (this.props.clientOnline && this.props.connectedToGoogleMaps === true || this.props.reInitializedGoogleMaps) {
       if (this.props.disconnectedGoogleMaps && this.props.isMapRendered === true)
       //Message (5F)
       {
@@ -206,7 +211,7 @@ class OnlineOnly extends Component {
     }
     else if (this.props.clientOnline && this.props.connectedToGoogleMaps === false) {
       return <div> <p className="alert"> It's not that you're offline, but an unexpected error occured so we couldn't connect to Google Maps. </p>
-      {this.props.googleMapsError && <p> {this.props.googleMapsError} </p>}
+      {this.props.googleMapsError && <p> {this.props.googleMapsError.message} </p>}
     </div> }
     //Message (3)
     else return <p className="alert">You're offline, Google Maps can't load offline!</p>
